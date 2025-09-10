@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>2 Player Tetris</title>
+  <style>
+    body { display: flex; justify-content: center; gap: 40px; background: #111; color: white; }
+    canvas { background: #222; border: 2px solid #555; }
+  </style>
+</head>
+<body>
+  <div>
+    <h2>Player 1 (WASD)</h2>
+    <canvas id="p1" width="240" height="400"></canvas>
+  </div>
+  <div>
+    <h2>Player 2 (Arrow Keys)</h2>
+    <canvas id="p2" width="240" height="400"></canvas>
+  </div>
+
+  <script>
+    const COLS = 10, ROWS = 20, BLOCK = 20;
+    const tetrominoes = [
+      [[1,1,1,1]],
+      [[1,1],[1,1]],
+      [[0,1,0],[1,1,1]],
+      [[1,0,0],[1,1,1]],
+      [[0,0,1],[1,1,1]],
+      [[1,1,0],[0,1,1]],
+      [[0,1,1],[1,1,0]]
+    ];
+
+    class Player {
+      constructor(canvas, controls) {
+        this.ctx = canvas.getContext('2d');
+        this.controls = controls;
+        this.reset();
+        this.board = this.createBoard();
+      }
+
+      createBoard() {
+        return Array.from({length: ROWS}, () => Array(COLS).fill(0));
+      }
+
+      drawBoard() {
+        this.ctx.clearRect(0,0,COLS*BLOCK,ROWS*BLOCK);
+        this.board.forEach((row,y)=>{
+          row.forEach((val,x)=>{
+            if(val) this.drawBlock(x,y,val);
+          });
+        });
+        this.drawPiece();
+      }
+
+      drawBlock(x,y,val) {
+        this.ctx.fillStyle = `hsl(${val*50},100%,50%)`;
+        this.ctx.fillRect(x*BLOCK,y*BLOCK,BLOCK,BLOCK);
+        this.ctx.strokeStyle = '#111';
+        this.ctx.strokeRect(x*BLOCK,y*BLOCK,BLOCK,BLOCK);
+      }
+
+      drawPiece() {
+        this.piece.shape.forEach((row,y)=>{
+          row.forEach((val,x)=>{
+            if(val) this.drawBlock(this.piece.x+x,this.piece.y+y,this.piece.type);
+          });
+        });
+      }
+
+      collide() {
+        return this.piece.shape.some((row,y)=>{
+          return row.some((val,x)=>{
+            if(val) {
+              let newX = this.piece.x+x;
+              let newY = this.piece.y+y;
+              return newX<0||newX>=COLS||newY>=ROWS||this.board[newY]?.[newX];
+            }
+            return false;
+          });
+        });
+      }
+
+      merge() {
+        this.piece.shape.forEach((row,y)=>{
+          row.forEach((val,x)=>{
+            if(val) this.board[this.piece.y+y][this.piece.x+x]=this.piece.type;
+          });
+        });
+        this.sweep();
+        this.reset();
+      }
+
+      sweep() {
+        this.board = this.board.filter(r => r.some(v=>!v));
+        while(this.board.length<ROWS) this.board.unshift(Array(COLS).fill(0));
+      }
+
+      reset() {
+        const type = Math.ceil(Math.random()*7);
+        this.piece = {
+          shape: tetrominoes[type-1].map(r=>[...r]),
+          x: 3,
+          y: 0,
+          type
+        };
+        if(this.collide()) {
+          this.board = this.createBoard(); // reset board if game over
+        }
+      }
+
+      rotate() {
+        const s = this.piece.shape;
+        const N = s.length;
+        const rotated = Array.from({length:N}, (_,i)=>s.map(r=>r[i]).reverse());
+        const old = this.piece.shape;
+        this.piece.shape = rotated;
+        if(this.collide()) this.piece.shape = old;
+      }
+
+      move(dx,dy) {
+        this.piece.x+=dx;
+        this.piece.y+=dy;
+        if(this.collide()) {
+          this.piece.x-=dx;
+          this.piece.y-=dy;
+          if(dy>0) { this.merge(); }
+        }
+      }
+    }
+
+    const players = [
+      new Player(document.getElementById('p1'), {left:'a',right:'d',down:'s',rotate:'w'}),
+      new Player(document.getElementById('p2'), {left:'ArrowLeft',right:'ArrowRight',down:'ArrowDown',rotate:'ArrowUp'})
+    ];
+
+    document.addEventListener('keydown', e => {
+      players.forEach(p => {
+        if(e.key===p.controls.left) p.move(-1,0);
+        if(e.key===p.controls.right) p.move(1,0);
+        if(e.key===p.controls.down) p.move(0,1);
+        if(e.key===p.controls.rotate) p.rotate();
+      });
+    });
+
+    function update() {
+      players.forEach(p=>{
+        p.move(0,1);
+        p.drawBoard();
+      });
+      setTimeout(update,500);
+    }
+
+    update();
+  </script>
+</body>
+</html>
