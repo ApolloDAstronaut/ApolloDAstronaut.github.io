@@ -1,80 +1,54 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <title>Pong vs AI</title>
+  <meta charset="UTF-8">
+  <title>Web Wrapper</title>
   <style>
-    body { margin:0; background:#0b1220; display:flex; justify-content:center; align-items:center; height:100vh; }
-    canvas { background:#071428; border-radius:8px; box-shadow:0 8px 25px rgba(0,0,0,0.6); }
+    body, html { margin: 0; height: 100%; }
+    iframe { width: 100%; height: 100%; border: none; }
+    #bar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      background: #111;
+      padding: 10px;
+      box-sizing: border-box;
+      z-index: 10;
+    }
+    #bar input {
+      width: 80%;
+      padding: 5px;
+      font-size: 16px;
+    }
+    #bar button {
+      padding: 5px 10px;
+    }
+    #wrapper {
+      position: absolute;
+      top: 50px;
+      bottom: 0;
+      width: 100%;
+    }
   </style>
 </head>
 <body>
-<canvas id="game" width="900" height="500"></canvas>
-<script>
-const canvas = document.getElementById('game');
-const ctx = canvas.getContext('2d');
-const W = canvas.width, H = canvas.height;
+  <div id="bar">
+    <input id="urlInput" placeholder="Enter URL (https://...)" />
+    <button onclick="loadURL()">Go</button>
+  </div>
+  <div id="wrapper">
+    <iframe id="webFrame" src=""></iframe>
+  </div>
 
-const PADDLE_WIDTH = 12, PADDLE_HEIGHT = 100, PADDLE_SPEED = 6;
-const BALL_SIZE = 12;
-let left = { x: 30, y: H/2 - PADDLE_HEIGHT/2, vy:0, score:0 };
-let right = { x: W-30-PADDLE_WIDTH, y: H/2 - PADDLE_HEIGHT/2, vy:0, score:0 };
-let ball = { x: W/2, y: H/2, vx:5, vy:3 };
-
-function draw(){
-  ctx.clearRect(0,0,W,H);
-  ctx.fillStyle="#e6eef8";
-  ctx.fillRect(left.x,left.y,PADDLE_WIDTH,PADDLE_HEIGHT);
-  ctx.fillRect(right.x,right.y,PADDLE_WIDTH,PADDLE_HEIGHT);
-  ctx.fillStyle="#1e90ff";
-  ctx.fillRect(ball.x,ball.y,BALL_SIZE,BALL_SIZE);
-  ctx.fillStyle="#9fb0c9";
-  ctx.font="24px sans-serif"; ctx.textAlign="center";
-  ctx.fillText(left.score, W/2-40, 30);
-  ctx.fillText(right.score, W/2+40, 30);
-}
-
-function update(){
-  // move paddles
-  left.y += left.vy;
-  left.y = Math.max(0, Math.min(H-PADDLE_HEIGHT,left.y));
-  // simple AI for right paddle
-  const target = ball.y - PADDLE_HEIGHT/2 + BALL_SIZE/2;
-  if (right.y < target) right.y += 4;
-  else if (right.y > target) right.y -= 4;
-  right.y = Math.max(0, Math.min(H-PADDLE_HEIGHT,right.y));
-  // move ball
-  ball.x += ball.vx; ball.y += ball.vy;
-  if(ball.y<=0||ball.y+BALL_SIZE>=H) ball.vy*=-1;
-  // collisions
-  if(ball.x<=left.x+PADDLE_WIDTH && ball.y+BALL_SIZE>=left.y && ball.y<=left.y+PADDLE_HEIGHT){
-    ball.vx = Math.abs(ball.vx); 
-  }
-  if(ball.x+BALL_SIZE>=right.x && ball.y+BALL_SIZE>=right.y && ball.y<=right.y+PADDLE_HEIGHT){
-    ball.vx = -Math.abs(ball.vx); 
-  }
-  // scoring
-  if(ball.x<0){ right.score++; reset(); }
-  if(ball.x>W){ left.score++; reset(); }
-}
-
-function reset(){
-  ball.x = W/2; ball.y = H/2;
-  ball.vx = (Math.random()<0.5?-5:5);
-  ball.vy = (Math.random()*6-3);
-}
-
-const keys={};
-window.addEventListener('keydown',e=>{ if(e.key==='w')keys.w=true; if(e.key==='s')keys.s=true; });
-window.addEventListener('keyup',e=>{ if(e.key==='w')keys.w=false; if(e.key==='s')keys.s=false; });
-
-function loop(){
-  left.vy = keys.w?-PADDLE_SPEED:keys.s?PADDLE_SPEED:0;
-  update();
-  draw();
-  requestAnimationFrame(loop);
-}
-loop();
-</script>
+  <script>
+    function loadURL() {
+      let url = document.getElementById('urlInput').value;
+      if (!url.startsWith('http')) {
+        url = 'https://' + url;
+      }
+      document.getElementById('webFrame').src = url;
+    }
+  </script>
 </body>
 </html>
